@@ -10,7 +10,7 @@ jobs:
 
     steps:
       - name: Check out the repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Check for changes in the folder
         id: changes
@@ -24,7 +24,7 @@ jobs:
           fi
 
       - name: Cache folder change state
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: folder_change_flag
           key: folder-change-${{ github.event.pull_request.number }}
