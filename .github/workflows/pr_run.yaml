@@ -7,6 +7,7 @@ on:
 jobs:
   check_folder_change:
     runs-on: ubuntu-latest
+
     steps:
       - name: Check out the repository
         uses: actions/checkout@v3
@@ -15,8 +16,10 @@ jobs:
         id: changes
         run: |
           if git diff --name-only origin/${{ github.event.pull_request.base.ref }} | grep '^path/to/folder/'; then
+            echo "Folder has changed."
             echo "::set-output name=folder_changed::true"
           else
+            echo "No folder changes detected."
             echo "::set-output name=folder_changed::false"
           fi
 
@@ -32,11 +35,19 @@ jobs:
         if: steps.changes.outputs.folder_changed == 'true'
         run: echo "changed" > folder_change_flag/changed.txt
 
+      - name: Check if folder change flag exists
+        id: check_flag
+        run: |
+          if [ -f folder_change_flag/changed.txt ]; then
+            echo "::set-output name=flag_exists::true"
+          else
+            echo "::set-output name=flag_exists::false"
+          fi
+
       - name: Continue running based on flag
         if: |
           steps.changes.outputs.folder_changed == 'true' ||
-          (steps.changes.outputs.folder_changed == 'false' &&
-          -f folder_change_flag/changed.txt)
+          steps.check_flag.outputs.flag_exists == 'true'
         run: |
           echo "Folder has changed previously or just now, running action."
 
