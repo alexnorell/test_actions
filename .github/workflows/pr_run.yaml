@@ -3,24 +3,43 @@ name: Run Action on Folder Change and PR Updates
 on:
   pull_request:
     types: [opened, synchronize]
-    paths:
-      - "test/**" # Specify the folder you're interested in here
-
-  workflow_run:
-    workflows: ["Run Action on Folder Change and PR Updates"]
-    types:
-      - completed
 
 jobs:
-  folder_change_job:
-    if: |
-      github.event_name == 'pull_request' ||
-      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
+  check_folder_change:
     runs-on: ubuntu-latest
     steps:
       - name: Check out the repository
         uses: actions/checkout@v3
 
+      - name: Check for changes in the folder
+        id: changes
+        run: |
+          if git diff --name-only origin/${{ github.event.pull_request.base.ref }} | grep '^path/to/folder/'; then
+            echo "::set-output name=folder_changed::true"
+          else
+            echo "::set-output name=folder_changed::false"
+          fi
+
+      - name: Cache folder change state
+        uses: actions/cache@v3
+        with:
+          path: folder_change_flag
+          key: folder-change-${{ github.event.pull_request.number }}
+          restore-keys: |
+            folder-change-${{ github.event.pull_request.number }}
+
+      - name: Set folder change flag
+        if: steps.changes.outputs.folder_changed == 'true'
+        run: echo "changed" > folder_change_flag/changed.txt
+
+      - name: Continue running based on flag
+        if: |
+          steps.changes.outputs.folder_changed == 'true' ||
+          (steps.changes.outputs.folder_changed == 'false' &&
+          -f folder_change_flag/changed.txt)
+        run: |
+          echo "Folder has changed previously or just now, running action."
+
       # Add your specific job steps here
       - name: Example Step
-        run: echo "This runs when folder changes or every commit in the PR"
+        run: echo "This runs when folder changes or every commit in the PR after that."
