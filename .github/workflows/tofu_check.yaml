@@ -24,8 +24,7 @@ jobs:
 
       - name: Terraform Format
         id: fmt
-        run: terraform fmt -check -recursive
-        working-directory: infra
+        run: terraform fmt -check -recursive infra
         continue-on-error: true
 
       - name: Post Format
